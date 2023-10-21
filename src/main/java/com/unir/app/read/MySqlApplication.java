@@ -1,7 +1,6 @@
-package com.unir.app.query;
+package com.unir.app.read;
 
 import com.unir.config.MySqlConnector;
-import com.unir.config.OracleDatabaseConnector;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.*;
