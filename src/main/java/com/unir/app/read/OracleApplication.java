@@ -20,6 +20,8 @@ public class OracleApplication {
 
             selectAllEmployees(connection);
             selectAllCountriesAsXml(connection);
+            selectAllEmployeesOnXML(connection);
+            selectAllManagersOnXML(connection);
 
         } catch (Exception e) {
             log.error("Error al tratar con la base de datos", e);
@@ -68,6 +70,79 @@ public class OracleApplication {
         ResultSet countries = selectCountries.executeQuery();
         while (countries.next()) {
             log.debug("Country as XML: {}", countries.getString("CountryXml"));
+        }
+    }
+
+    /**
+     * Ejemplo de obtención de respuesta de la base de datos en xml.
+     * @param connection
+     * @throws SQLException
+     */
+    private static void selectAllEmployeesOnXML(Connection connection) throws SQLException {
+        PreparedStatement selectEmployees = connection.prepareStatement(
+                "SELECT\n" +
+                        "    XMLELEMENT(\n" +
+                        "        NAME \"empleados\",\n" +
+                        "        XMLATTRIBUTES (\n" +
+                        "            EMPLOYEES.FIRST_NAME  AS \"nombre\",\n" +
+                        "            EMPLOYEES.LAST_NAME   AS \"apellidos\",\n" +
+                        "            DEPARTMENTS.DEPARTMENT_NAME AS \"departamento\"\n" +
+                        "        )\n" +
+                        "    ) AS \"xml\"\n" +
+                        "FROM\n" +
+                        "    HR.EMPLOYEES\n" +
+                        "INNER JOIN\n" +
+                        "    HR.DEPARTMENTS\n" +
+                        "ON\n" +
+                        "    EMPLOYEES.DEPARTMENT_ID = DEPARTMENTS.DEPARTMENT_ID"
+        );
+        ResultSet employees = selectEmployees.executeQuery();
+
+        while (employees.next()) {
+            log.debug("Employee xml: {}", employees.getString("xml"));
+        }
+    }
+
+    /**
+     * Ejemplo de obtención de respuesta de la base de datos en xml.
+     * @param connection
+     * @throws SQLException
+     */
+    private static void selectAllManagersOnXML(Connection connection) throws SQLException {
+        // Create a PreparedStatement object to execute the SQL query.
+        PreparedStatement selectEmployees = connection.prepareStatement(
+                "SELECT XMLELEMENT(\n" +
+                        "    NAME \"managers\",\n" +
+                        "    XMLAGG(\n" +
+                        "        XMLELEMENT(\n" +
+                        "            NAME \"manager\",\n" +
+                        "            XMLFOREST(\n" +
+                        "                XMLFOREST(\n" +
+                        "                    EMPLOYEES.FIRST_NAME AS \"first_name\",\n" +
+                        "                    EMPLOYEES.LAST_NAME AS \"last_name\"\n" +
+                        "                ) AS \"nombreCompleto\",\n" +
+                        "                DEPARTMENTS.DEPARTMENT_NAME AS \"department\",\n" +
+                        "                LOCATIONS.CITY AS \"city\",\n" +
+                        "                COUNTRIES.COUNTRY_NAME AS \"country\"\n" +
+                        "            )\n" +
+                        "        )\n" +
+                        "    )\n" +
+                        ") AS \"xml\"\n" +
+                        "FROM HR.EMPLOYEES\n" +
+                        "INNER JOIN HR.DEPARTMENTS\n" +
+                        "ON EMPLOYEES.DEPARTMENT_ID = DEPARTMENTS.DEPARTMENT_ID\n" +
+                        "INNER JOIN HR.LOCATIONS\n" +
+                        "ON DEPARTMENTS.LOCATION_ID = LOCATIONS.LOCATION_ID\n" +
+                        "INNER JOIN HR.COUNTRIES\n" +
+                        "ON LOCATIONS.COUNTRY_ID = COUNTRIES.COUNTRY_ID"
+        );
+
+        // Execute the PreparedStatement object and get the results.
+        ResultSet employees = selectEmployees.executeQuery();
+
+        // Loop through the results and log the XML output to the debug level.
+        while (employees.next()) {
+            log.debug("Manager xml: {}", employees.getString("xml"));
         }
     }
 }
