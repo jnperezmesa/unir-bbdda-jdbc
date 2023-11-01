@@ -27,7 +27,7 @@ public class MySqlApplication {
             // Obtener el segundo empleado con el salario más alto del departamento de Marketing
             getEmployeeHighestSalaryWithDeparmentAndPosition(connection, "Marketing", 2);
             // Obtener empleados contratados en enero de 1999
-            //getEmployeesByMonthAndYear(connection, "1", "1999");
+            getEmployeesByMonthAndYear(connection, "1", "1999");
 
         } catch (Exception e) {
             log.error("Error al tratar con la base de datos", e);
