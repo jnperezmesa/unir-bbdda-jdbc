@@ -20,6 +20,14 @@ public class MySqlApplication {
 
             selectAllEmployeesOfDepartment(connection, "d001");
             selectAllEmployeesOfDepartment(connection, "d002");
+            // Obtener el total de empleados y empleadas
+            getEmployeeCountByGender(connection);
+            // Obtener el empleado con el salario más alto del departamento de Marketing
+            getEmployeeHighestSalaryWithDeparmentAndPosition(connection, "Marketing", 1);
+            // Obtener el segundo empleado con el salario más alto del departamento de Marketing
+            getEmployeeHighestSalaryWithDeparmentAndPosition(connection, "Marketing", 2);
+            // Obtener empleados contratados en enero de 1999
+            //getEmployeesByMonthAndYear(connection, "1", "1999");
 
         } catch (Exception e) {
             log.error("Error al tratar con la base de datos", e);
@@ -63,9 +71,103 @@ public class MySqlApplication {
         ResultSet employees = selectEmployees.executeQuery();
 
         while (employees.next()) {
-            log.debug("Empleados del departamento {}: {}",
-                    department,
-                    employees.getString("Total"));
+            log.debug(
+                "Empleados del departamento {}: {}",
+                department,
+                employees.getString("Total")
+            );
+        }
+    }
+
+    /**
+     * Obtener el total de empleados y empleadas.
+     * @param connection
+     * @throws SQLException
+     */
+    public static void getEmployeeCountByGender(Connection connection) throws SQLException {
+        String sql = "SELECT employees.gender AS genero, COUNT(*) AS total "
+                + "FROM employees.employees "
+                + "GROUP BY gender "
+                + "ORDER BY total DESC";
+
+        PreparedStatement statement = connection.prepareStatement(sql);
+        ResultSet resultSet = statement.executeQuery();
+
+        while (resultSet.next()) {
+            String genero = resultSet.getString("genero");
+            int total = resultSet.getInt("total");
+            log.info("Género: " + genero + ", Total: " + total);
+        }
+    }
+
+    /**
+     * Obtener el empleado con el salario más alto de un departamento y posición concretos.
+     * @param connection
+     * @throws SQLException
+     */
+    public static void getEmployeeHighestSalaryWithDeparmentAndPosition(Connection connection, String nombreDepartamento, int posicion) throws SQLException {
+        String sql = "SELECT employees.first_name AS nombre, "
+                + "employees.last_name AS apellidos, "
+                + "salaries.salary AS salario "
+                + "FROM employees.employees "
+                + "INNER JOIN employees.salaries "
+                + "ON employees.emp_no = salaries.emp_no "
+                + "WHERE salaries.to_date = '9999-01-01' "
+                + "AND employees.emp_no IN ( "
+                + "SELECT dept_emp.emp_no "
+                + "FROM employees.dept_emp "
+                + "WHERE dept_no = ( "
+                + "SELECT dept_no "
+                + "FROM employees.departments "
+                + "WHERE dept_name = ? "
+                + ") "
+                + ") "
+                + "ORDER BY salaries.salary DESC "
+                + "LIMIT ?, 1";
+
+        PreparedStatement statement = connection.prepareStatement(sql);
+
+        statement.setString(1, nombreDepartamento);
+        statement.setInt(2, posicion - 1);
+
+
+        ResultSet resultSet = statement.executeQuery();
+
+        while (resultSet.next()) {
+            String nombre = resultSet.getString("nombre");
+            String apellidos = resultSet.getString("apellidos");
+            double salario = resultSet.getDouble("salario");
+            log.info("Nombre: " + nombre + ", Apellidos: " + apellidos + ", Salario: " + salario);
+        }
+
+    }
+
+    /**
+     * Obtener los empleados que se han contratado en un mes y año concretos.
+     * @param connection
+     * @throws SQLException
+     */
+    public static void getEmployeesByMonthAndYear(Connection connection, String mes, String anio) throws SQLException {
+        String sql = "SELECT employees.first_name AS nombre, "
+                + "employees.last_name AS apellidos, "
+                + "employees.hire_date AS fecha_contratacion "
+                + "FROM employees.employees "
+                + "WHERE MONTH(employees.hire_date) = ? "
+                + "AND YEAR(employees.hire_date) = ? "
+                + "ORDER BY employees.hire_date DESC";
+
+        PreparedStatement statement = connection.prepareStatement(sql);
+
+        statement.setString(1, mes);
+        statement.setString(2, anio);
+
+        ResultSet resultSet = statement.executeQuery();
+
+        while (resultSet.next()) {
+            String nombre = resultSet.getString("nombre");
+            String apellidos = resultSet.getString("apellidos");
+            String fechaContratacion = resultSet.getString("fecha_contratacion");
+            log.info("Nombre: " + nombre + ", Apellidos: " + apellidos + ", Fecha de Contratación: " + fechaContratacion);
         }
     }
 }
